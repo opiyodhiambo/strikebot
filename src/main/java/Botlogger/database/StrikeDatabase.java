@@ -11,7 +11,7 @@ import static java.sql.DriverManager.getConnection;
 public class StrikeDatabase {
     private static final String DB_URL = System.getenv("DATABASE_PATH") != null
             ? System.getenv("DATABASE_PATH")
-            : "jdbc:sqlite:zrestaffstrikes";
+            : "jdbc:sqlite:opiyodhiambo";
 
     public StrikeDatabase() {
         initDatabase();
