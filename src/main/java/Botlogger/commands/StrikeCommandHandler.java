@@ -15,6 +15,7 @@ import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.Permission;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.LoggerFactory;
 
 import java.awt.*;
@@ -85,6 +86,7 @@ public class StrikeCommandHandler extends ListenerAdapter {
     @Override
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
 
+
         if (event.getName().equals("appeal") || event.getName().equals("myappeals")) {
             switch (event.getName()) {
                 case "appeal" -> handleAppeal(event);
@@ -136,7 +138,7 @@ public class StrikeCommandHandler extends ListenerAdapter {
             }
 
             // Safe to reply after deferral
-            event.getHook().sendMessage("✅ Delayed reply sent after 5 seconds").queue();
+            event.getHook().editOriginal("✅ Delayed reply sent after 5 seconds").queue();
         }).start();
     }
 
@@ -168,6 +170,8 @@ public class StrikeCommandHandler extends ListenerAdapter {
     }
 
     private void handleStrike(SlashCommandInteractionEvent event) {
+        event.deferReply(true).queue();
+
         User user = Objects.requireNonNull(event.getOption("user")).getAsUser();
         String reason = Objects.requireNonNull(event.getOption("reason")).getAsString();
         Member moderator = event.getMember();
@@ -188,21 +192,19 @@ public class StrikeCommandHandler extends ListenerAdapter {
 
         TextChannel staffStrikesChannel = event.getJDA().getTextChannelById("1372012155964227584");
 
-        event.deferReply(true).queue();
-
         if (staffStrikesChannel != null) {
             staffStrikesChannel.sendMessageEmbeds(embed.build()).queue(
                     success -> {
-                        event.getHook().sendMessage("✅ Strike issued successfully! Check " + staffStrikesChannel.getAsMention() + " for details.")
-                                .setEphemeral(true).queue();
+                        event.getHook().editOriginal("✅ Strike issued successfully! Check " + staffStrikesChannel.getAsMention() + " for details.")
+                                .queue();
                     },
                     failure -> {
-                        event.getHook().sendMessageEmbeds(embed.build()).queue();
+                        event.getHook().editOriginalEmbeds(embed.build()).queue();
                         System.err.println("Failed to send strike to staff channel: " + failure.getMessage());
                     }
             );
         } else {
-            event.getHook().sendMessageEmbeds(embed.build()).queue();
+            event.getHook().editOriginalEmbeds(embed.build()).queue();
             System.err.println("Staff strikes channel not found!");
         }
     }
@@ -237,10 +239,12 @@ public class StrikeCommandHandler extends ListenerAdapter {
             }
         }
 
-        event.replyEmbeds(embed.build()).queue();
+        event.getHook().editOriginalEmbeds(embed.build()).queue();
     }
 
-    private void handleRemoveStrike(SlashCommandInteractionEvent event) {
+    private void handleRemoveStrike(@NotNull SlashCommandInteractionEvent event) {
+        event.deferReply(true).queue();
+
         User user = Objects.requireNonNull(event.getOption("user")).getAsUser();
         int strikeNumber = Objects.requireNonNull(event.getOption("number")).getAsInt();
 
@@ -260,26 +264,28 @@ public class StrikeCommandHandler extends ListenerAdapter {
         if (staffStrikesChannel != null) {
             staffStrikesChannel.sendMessageEmbeds(embed.build()).queue(
                     success -> {
-                        event.reply("✅ Strike removed successfully! Check " + staffStrikesChannel.getAsMention() + " for details.")
-                                .setEphemeral(true).queue();
+                        event.getHook().editOriginal("✅ Strike removed successfully! Check " + staffStrikesChannel.getAsMention() + " for details.")
+                                .queue();
                     },
                     failure -> {
-                        event.replyEmbeds(embed.build()).queue();
+                        event.getHook().editOriginalEmbeds(embed.build()).queue();
                         System.err.println("Failed to send strike removal to staff channel: " + failure.getMessage());
                     }
             );
         } else {
-            event.replyEmbeds(embed.build()).queue();
+            event.getHook().editOriginalEmbeds(embed.build()).queue();
             System.err.println("Staff strikes channel not found!");
         }
     }
 
     private void handleClearStrikes(SlashCommandInteractionEvent event) {
+        event.deferReply(true).queue();
+
         User user = Objects.requireNonNull(event.getOption("user")).getAsUser();
         List<Strike> currentStrikes = strikeService.getStrikes(user.getId());
 
         if (currentStrikes.isEmpty()) {
-            event.reply("❌ " + user.getName() + " has no strikes to clear.").setEphemeral(true).queue();
+            event.getHook().editOriginal("❌ " + user.getName() + " has no strikes to clear.").queue();
             return;
         }
 
@@ -301,21 +307,23 @@ public class StrikeCommandHandler extends ListenerAdapter {
         if (staffStrikesChannel != null) {
             staffStrikesChannel.sendMessageEmbeds(embed.build()).queue(
                     success -> {
-                        event.reply("✅ All strikes cleared successfully! Check " + staffStrikesChannel.getAsMention() + " for details.")
-                                .setEphemeral(true).queue();
+                        event.getHook().editOriginal("✅ All strikes cleared successfully! Check " + staffStrikesChannel.getAsMention() + " for details.")
+                                .queue();
                     },
                     failure -> {
-                        event.replyEmbeds(embed.build()).queue();
+                        event.getHook().editOriginalEmbeds(embed.build()).queue();
                         System.err.println("Failed to send strike clear to staff channel: " + failure.getMessage());
                     }
             );
         } else {
-            event.replyEmbeds(embed.build()).queue();
+            event.getHook().editOriginalEmbeds(embed.build()).queue();
             System.err.println("Staff strikes channel not found!");
         }
     }
 
     private void handleEditStrike(SlashCommandInteractionEvent event) {
+        event.deferReply(true).queue();
+
         User user = Objects.requireNonNull(event.getOption("user")).getAsUser();
         int strikeNumber = Objects.requireNonNull(event.getOption("number")).getAsInt();
         String newReason = Objects.requireNonNull(event.getOption("newreason")).getAsString();
@@ -323,12 +331,12 @@ public class StrikeCommandHandler extends ListenerAdapter {
         List<Strike> strikes = strikeService.getStrikes(user.getId());
 
         if (strikes.isEmpty()) {
-            event.reply("❌ " + user.getName() + " has no strikes.").setEphemeral(true).queue();
+            event.getHook().editOriginal("❌ " + user.getName() + " has no strikes.").queue();
             return;
         }
 
         if (strikeNumber < 1 || strikeNumber > strikes.size()) {
-            event.reply("❌ Invalid strike number. " + user.getName() + " has " + strikes.size() + " strikes.").setEphemeral(true).queue();
+            event.getHook().editOriginal("❌ Invalid strike number. " + user.getName() + " has " + strikes.size() + " strikes.").queue();
             return;
         }
 
@@ -353,23 +361,25 @@ public class StrikeCommandHandler extends ListenerAdapter {
         if (staffStrikesChannel != null) {
             staffStrikesChannel.sendMessageEmbeds(embed.build()).queue(
                     success -> {
-                        event.reply("✅ Strike edited successfully! Check " + staffStrikesChannel.getAsMention() + " for details.")
-                                .setEphemeral(true).queue();
+                        event.getHook().editOriginal("✅ Strike edited successfully! Check " + staffStrikesChannel.getAsMention() + " for details.")
+                                .queue();
                     },
                     failure -> {
-                        event.replyEmbeds(embed.build()).queue();
+                        event.getHook().editOriginalEmbeds(embed.build()).queue();
                         System.err.println("Failed to send strike edit to staff channel: " + failure.getMessage());
                     }
             );
         } else {
-            event.replyEmbeds(embed.build()).queue();
+            event.getHook().editOriginalEmbeds(embed.build()).queue();
             System.err.println("Staff strikes channel not found!");
         }
     }
 
     private void handleBackupStrikes(SlashCommandInteractionEvent event) {
+        event.deferReply(true).queue();
+
         if (!event.getUser().getId().equals(OWNER_USER_ID)) {
-            event.reply("❌ You are not authorized to use this command.").setEphemeral(true).queue();
+            event.getHook().editOriginal("❌ You are not authorized to use this command.").queue();
             return;
         }
 
@@ -391,7 +401,7 @@ public class StrikeCommandHandler extends ListenerAdapter {
                     .setFooter("Strike System", null)
                     .setTimestamp(java.time.Instant.now());
 
-            event.replyEmbeds(embed.build()).setEphemeral(true).queue();
+            event.getHook().editOriginalEmbeds(embed.build()).queue();
         } catch (Exception e) {
             EmbedBuilder errorEmbed = new EmbedBuilder()
                     .setTitle("⚠️ Backup Failed")
@@ -400,7 +410,7 @@ public class StrikeCommandHandler extends ListenerAdapter {
                     .setFooter("Strike System", null)
                     .setTimestamp(java.time.Instant.now());
 
-            event.replyEmbeds(errorEmbed.build()).setEphemeral(true).queue();
+            event.getHook().editOriginalEmbeds(errorEmbed.build()).queue();
         }
     }
 
@@ -451,12 +461,14 @@ public class StrikeCommandHandler extends ListenerAdapter {
     }
 
     private void handleUndoAppeal(SlashCommandInteractionEvent event) {
+        event.deferReply(true).queue();
+
         User targetUser = Objects.requireNonNull(event.getOption("user")).getAsUser();
         String targetUserId = targetUser.getId();
 
         List<Appeal> userAppeals = appealService.getUserAppeals(targetUserId);
         if (userAppeals.isEmpty()) {
-            event.reply("❌ " + targetUser.getName() + " has no appeals to undo.").setEphemeral(true).queue();
+            event.getHook().editOriginal("❌ " + targetUser.getName() + " has no appeals to undo.").queue();
             return;
         }
 
@@ -474,9 +486,9 @@ public class StrikeCommandHandler extends ListenerAdapter {
 
             sendAppealResetLog(event, targetUser, userAppeals.size());
 
-            event.replyEmbeds(embed.build()).setEphemeral(true).queue();
+            event.getHook().editOriginalEmbeds(embed.build()).queue();
         } else {
-            event.reply("❌ Failed to reset appeals. Please try again.").setEphemeral(true).queue();
+            event.getHook().editOriginal("❌ Failed to reset appeals. Please try again.").queue();
         }
     }
 
@@ -726,8 +738,10 @@ public class StrikeCommandHandler extends ListenerAdapter {
     }
 
     private void handleDbInfo(SlashCommandInteractionEvent event) {
+        event.deferReply(true).queue();
+
         if (!event.getUser().getId().equals(OWNER_USER_ID)) {
-            event.reply("❌ You are not authorized to use this command.").setEphemeral(true).queue();
+            event.getHook().editOriginal("❌ You are not authorized to use this command.").queue();
             return;
         }
 
@@ -781,7 +795,7 @@ public class StrikeCommandHandler extends ListenerAdapter {
                     .setFooter("Strike System", null)
                     .setTimestamp(java.time.Instant.now());
 
-            event.replyEmbeds(embed.build()).setEphemeral(true).queue();
+            event.getHook().editOriginalEmbeds(embed.build()).queue();
         } else {
             EmbedBuilder embed = new EmbedBuilder()
                     .setTitle("📊 Complete Database Information")
@@ -790,7 +804,7 @@ public class StrikeCommandHandler extends ListenerAdapter {
                     .setFooter("Strike System", null)
                     .setTimestamp(java.time.Instant.now());
 
-            event.replyEmbeds(embed.build()).setEphemeral(true).queue();
+            event.getHook().editOriginalEmbeds(embed.build()).queue();
         }
     }
 
@@ -799,24 +813,26 @@ public class StrikeCommandHandler extends ListenerAdapter {
     }
 
     private void handleAppeal(SlashCommandInteractionEvent event) {
+        event.deferReply(true).queue();
+
         String userId = event.getUser().getId();
         int strikeNumber = Objects.requireNonNull(event.getOption("strike")).getAsInt();
         String reason = Objects.requireNonNull(event.getOption("reason")).getAsString();
 
         if (appealService.hasEverSubmittedAppeal(userId)) {
-            event.reply("❌ You have already used your one appeal. Each user can only appeal once.").setEphemeral(true).queue();
+            event.getHook().editOriginal("❌ You have already used your one appeal. Each user can only appeal once.").queue();
             return;
         }
 
         List<Strike> strikes = strikeService.getStrikes(userId);
 
         if (strikes.isEmpty()) {
-            event.reply("❌ You don't have any strikes to appeal.").setEphemeral(true).queue();
+            event.getHook().editOriginal("❌ You don't have any strikes to appeal.").queue();
             return;
         }
 
         if (strikeNumber < 1 || strikeNumber > strikes.size()) {
-            event.reply("❌ Invalid strike number. You have " + strikes.size() + " strikes.").setEphemeral(true).queue();
+            event.getHook().editOriginal("❌ Invalid strike number. You have " + strikes.size() + " strikes.").queue();
             return;
         }
 
@@ -840,13 +856,15 @@ public class StrikeCommandHandler extends ListenerAdapter {
 
             sendAppealSubmittedLog(event, appealedStrike, reason, appealId);
 
-            event.replyEmbeds(embed.build()).setEphemeral(true).queue();
+            event.getHook().editOriginalEmbeds(embed.build()).queue();
         } else {
-            event.reply("❌ Failed to submit appeal. You may have already used your one appeal.").setEphemeral(true).queue();
+            event.getHook().editOriginal("❌ Failed to submit appeal. You may have already used your one appeal.").queue();
         }
     }
 
     private void handleMyAppeals(SlashCommandInteractionEvent event) {
+        event.deferReply(true).queue();
+
         String userId = event.getUser().getId();
         List<Appeal> appeals = appealService.getUserAppeals(userId);
 
@@ -886,10 +904,12 @@ public class StrikeCommandHandler extends ListenerAdapter {
             embed.setDescription(description.toString());
         }
 
-        event.replyEmbeds(embed.build()).setEphemeral(true).queue();
+        event.getHook().editOriginalEmbeds(embed.build()).queue();
     }
 
     private void handlePendingAppeals(SlashCommandInteractionEvent event) {
+        event.deferReply(true).queue();
+
         List<Appeal> pendingAppeals = appealService.getAllPendingAppeals();
 
         EmbedBuilder embed = new EmbedBuilder()
@@ -920,27 +940,29 @@ public class StrikeCommandHandler extends ListenerAdapter {
             embed.setDescription(description.toString());
         }
 
-        event.replyEmbeds(embed.build()).setEphemeral(true).queue();
+        event.getHook().editOriginalEmbeds(embed.build()).queue();
     }
 
     private void handleReviewAppeal(SlashCommandInteractionEvent event) {
+        event.deferReply(true).queue();
+
         int appealId = Objects.requireNonNull(event.getOption("appealid")).getAsInt();
         String decision = Objects.requireNonNull(event.getOption("decision")).getAsString().toLowerCase();
         String reviewReason = Objects.requireNonNull(event.getOption("reason")).getAsString();
 
         if (!decision.equals("approve") && !decision.equals("deny")) {
-            event.reply("❌ Decision must be either 'approve' or 'deny'.").setEphemeral(true).queue();
+            event.getHook().editOriginal("❌ Decision must be either 'approve' or 'deny'.").queue();
             return;
         }
 
         Appeal appeal = appealService.getAppealById(appealId);
         if (appeal == null) {
-            event.reply("❌ Appeal not found.").setEphemeral(true).queue();
+            event.getHook().editOriginal("❌ Appeal not found.").queue();
             return;
         }
 
         if (!appeal.getStatus().equals("PENDING")) {
-            event.reply("❌ This appeal has already been reviewed.").setEphemeral(true).queue();
+            event.getHook().editOriginal("❌ This appeal has already been reviewed.").queue();
             return;
         }
 
@@ -978,9 +1000,9 @@ public class StrikeCommandHandler extends ListenerAdapter {
                 staffStrikesChannel.sendMessageEmbeds(embed.build()).queue();
             }
 
-            event.reply("✅ Appeal " + decision + "d successfully!").setEphemeral(true).queue();
+            event.getHook().editOriginal("✅ Appeal " + decision + "d successfully!").queue();
         } else {
-            event.reply("❌ Failed to " + decision + " appeal. Please try again.").setEphemeral(true).queue();
+            event.getHook().editOriginal("❌ Failed to " + decision + " appeal. Please try again.").queue();
         }
     }
 
