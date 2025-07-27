@@ -76,7 +76,9 @@ public class StrikeCommandHandler extends ListenerAdapter {
                         .addOption(OptionType.STRING, "decision", "approve or deny", true)
                         .addOption(OptionType.STRING, "reason", "Reason for the decision", true),
                 Commands.slash("undoappeal", "Reset a user's appeal so they can appeal again. (Admin Only)")
-                        .addOption(OptionType.USER, "user", "User whose appeal to reset", true)
+                        .addOption(OptionType.USER, "user", "User whose appeal to reset", true),
+                Commands.slash("testtimeout", "Simulate a delayed response to test timeout behavior.")
+
         );
     }
 
@@ -117,7 +119,25 @@ public class StrikeCommandHandler extends ListenerAdapter {
             case "editstrike" -> handleEditStrike(event);
             case "backupstrikes" -> handleBackupStrikes(event);
             case "dbinfo" -> handleDbInfo(event);
+            case "testtimeout" -> handleTestTimeout(event);
         }
+    }
+
+    private void handleTestTimeout(SlashCommandInteractionEvent event) {
+        // Telling Discord we’ll respond later
+        event.deferReply(true).queue();
+
+        // Simulating long DB or API delay
+        new Thread(() -> {
+            try {
+                Thread.sleep(5000); // Wait 5 seconds
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            // Safe to reply after deferral
+            event.getHook().sendMessage("✅ Delayed reply sent after 5 seconds").queue();
+        }).start();
     }
 
     private boolean hasManagementPermissions(SlashCommandInteractionEvent event) {
@@ -168,24 +188,28 @@ public class StrikeCommandHandler extends ListenerAdapter {
 
         TextChannel staffStrikesChannel = event.getJDA().getTextChannelById("1372012155964227584");
 
+        event.deferReply(true).queue();
+
         if (staffStrikesChannel != null) {
             staffStrikesChannel.sendMessageEmbeds(embed.build()).queue(
                     success -> {
-                        event.reply("✅ Strike issued successfully! Check " + staffStrikesChannel.getAsMention() + " for details.")
+                        event.getHook().sendMessage("✅ Strike issued successfully! Check " + staffStrikesChannel.getAsMention() + " for details.")
                                 .setEphemeral(true).queue();
                     },
                     failure -> {
-                        event.replyEmbeds(embed.build()).queue();
+                        event.getHook().sendMessageEmbeds(embed.build()).queue();
                         System.err.println("Failed to send strike to staff channel: " + failure.getMessage());
                     }
             );
         } else {
-            event.replyEmbeds(embed.build()).queue();
+            event.getHook().sendMessageEmbeds(embed.build()).queue();
             System.err.println("Staff strikes channel not found!");
         }
     }
 
     private void handleStrikes(SlashCommandInteractionEvent event) {
+        event.deferReply(true).queue();
+
         User user = event.getOption("user").getAsUser();
         List<Strike> strikes = strikeService.getStrikes(user.getId());
 

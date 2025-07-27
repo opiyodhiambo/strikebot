@@ -2,6 +2,7 @@ package Botlogger.database;
 
 import Botlogger.model.Strike;
 import java.sql.*;
+import io.github.cdimascio.dotenv.Dotenv;
 import java.util.ArrayList;
 import java.util.List;
 import java.sql.Connection;
@@ -9,9 +10,8 @@ import java.sql.SQLException;
 import static java.sql.DriverManager.getConnection;
 
 public class StrikeDatabase {
-    private static final String DB_URL = System.getenv("DATABASE_PATH") != null
-            ? System.getenv("DATABASE_PATH")
-            : "jdbc:sqlite:opiyodhiambo";
+    private static final Dotenv dontenv = Dotenv.load();
+    private static final String DB_URL = dontenv.get("DATABASE_PATH");
 
     public StrikeDatabase() {
         initDatabase();
@@ -23,7 +23,7 @@ public class StrikeDatabase {
 
             String createStrikesTable = """
                 CREATE TABLE IF NOT EXISTS strikes (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    id SERIAL PRIMARY KEY,
                     user_id TEXT NOT NULL,
                     reason TEXT NOT NULL,
                     moderator_id TEXT NOT NULL,
@@ -157,7 +157,9 @@ public class StrikeDatabase {
     }
 
     public void markAsInitialized() {
-        String sql = "INSERT OR REPLACE INTO bot_metadata (key, value) VALUES ('strikes_imported', 'true')";
+        String sql = "INSERT INTO bot_metadata (key, value) " +
+                "VALUES ('strikes_imported', 'true') " +
+                "ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value";
         try (Connection conn = getConnection(DB_URL);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.executeUpdate();

@@ -1,15 +1,16 @@
 package Botlogger.database;
 
 import Botlogger.model.Appeal;
+import io.github.cdimascio.dotenv.Dotenv;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import static java.sql.DriverManager.getConnection;
 
 public class AppealDatabase {
-    private static final String DB_URL = System.getenv("DATABASE_PATH") != null
-            ? System.getenv("DATABASE_PATH")
-            : "jdbc:sqlite:opiyodhiambo";
+    private static final Dotenv dontenv = Dotenv.load();
+    private static final String DB_URL = dontenv.get("DATABASE_PATH");
 
     public AppealDatabase() {
         initAppealTables();
@@ -21,7 +22,7 @@ public class AppealDatabase {
 
             String createAppealsTable = """
                 CREATE TABLE IF NOT EXISTS appeals (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    id SERIAL PRIMARY KEY,
                     user_id TEXT NOT NULL,
                     strike_id INTEGER NOT NULL,
                     reason TEXT NOT NULL,
